@@ -1,0 +1,1 @@
+# Parallel Mandelbrot Set Calculation
