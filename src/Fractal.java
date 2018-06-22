@@ -11,9 +11,7 @@ public class Fractal {
         this.width = width;
         this.height = height;
         this.xLimitLow = xLimitLow;
-        this.xLimitHigh = xLimitHigh;
         this.yLimitLow = yLimitLow;
-        this.yLimitHigh = yLimitHigh;
         this.calculationLimit = calculationLimit;
         this.maxIterations = maxIterations;
         this.imageName = imageName;
@@ -27,18 +25,31 @@ public class Fractal {
         }
         this.image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
     }
-
+// size, rect, threads, fileName, quiet
     public static void main(String[] args) throws Exception{
-        Fractal a = new Fractal(1920, 1080, -2, 2, -2, 2, 4, 20, "mandelbrot2.png");
-        LinkedList<Section> sections = a.splitCalculationsBySections();
-        int counter = 0;
-        while(!sections.isEmpty()){
-            counter++;
-            Section currentSection = sections.pop();
-            if(counter % 2 == 0) {
-                a.generate(currentSection.startHeight, currentSection.endHeight, currentSection.startWidth, currentSection.endWidth);
-            }
+        int threadCount;
+        if(args[0] != null){
+            threadCount = Integer.parseInt(args[0]);
+        } else{
+            threadCount = 1;
         }
+        Fractal a = new Fractal(1920 * 4, 1080 * 4, -2, 2, -2, 2, 16, 50, "mandelbrot2.png");
+        LinkedList<Section> sections = a.splitCalculationsBySections();
+        Scheduler scheduler = new Scheduler(sections);
+
+        Thread[] threads = new Thread[threadCount];
+
+        long startTime = System.nanoTime();
+        for(int i = 0; i < threadCount; i++){
+            threads[i] = new Thread(new FractalThread(a, scheduler, "Thread " + i));
+            threads[i].start();
+        }
+
+        for(int i = 0; i < threadCount; i++){
+            threads[i].join();
+        }
+
+        System.out.println("Elapsed time: " + ((System.nanoTime() - startTime)/1000000000.0));
 
         a.exportImage();
     }
@@ -46,9 +57,9 @@ public class Fractal {
     private LinkedList<Section> splitCalculationsBySections(){
         LinkedList<Section> sections = new LinkedList<>();
 
-        int dHeight = 150;
+        int dHeight = 350;
         int currHeight = dHeight;
-        int dWidth = 150;
+        int dWidth = 350;
         int currWidth;
         for(; currHeight <= height; currHeight += dHeight){
             for(currWidth = dWidth; currWidth <= width; currWidth += dWidth){
@@ -65,23 +76,20 @@ public class Fractal {
         return sections;
     }
 
-    public void exportImage() throws Exception{
+    private void exportImage() throws Exception{
         ImageIO.write(image, "png", new File(imageName));
     }
 
-    private void generate(int heightStart, int heightLimit, int widthStart, int widthLimit) throws Exception {
-        long startTime = System.nanoTime();
-
-        drawFractalByBoundaries(heightStart, heightLimit, widthStart, widthLimit);
-
-        System.out.println("Elapsed time: " + ((System.nanoTime() - startTime)/1000000000.0));
+    void calculateSection(Section section){
+        calculateByBoundaries(section.startHeight, section.endHeight, section.startWidth, section.endWidth);
     }
 
-    private void drawFractalByBoundaries(int heightStart, int heightLimit, int widthStart, int widthLimit){
+    private void calculateByBoundaries(int heightStart, int heightLimit, int widthStart, int widthLimit){
         double cImaginary;
         double cReal;
+        long startTime = System.nanoTime();
         for (int row = heightStart; row < heightLimit; row++) {
-            System.out.println("Progress: " + (row + 1) + "/" + height);
+            //System.out.println("Progress: " + (row + 1) + "/" + height);
             cImaginary = (yLimitLow + row * horizontalStepBetweenPixels) * resolutionProportion;
 
             for (int col = widthStart; col < widthLimit; col++) {
@@ -92,7 +100,7 @@ public class Fractal {
                 int iterationCounter = 0;
                 while (Z.getReal() * Z.getReal() + Z.getImaginary() * Z.getImaginary() < calculationLimit &&
                         iterationCounter < maxIterations) {
-                    Z = C.multiply(Z.cos());
+                    Z=C.multiply(Z.cos());
                     iterationCounter++;
                 }
                 if (iterationCounter < maxIterations){
@@ -102,15 +110,14 @@ public class Fractal {
                 }
             }
         }
+//        System.out.println(Thread.currentThread().getName() + "calculating time: " + ((System.nanoTime() - startTime)/1000000000.0));
     }
 
     // Member variables //
     private int width;
     private int height;
     private int xLimitLow;
-    private int xLimitHigh;
     private int yLimitLow;
-    private int yLimitHigh;
     private int calculationLimit;
     private int maxIterations;
     private String imageName;

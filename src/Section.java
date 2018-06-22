@@ -1,5 +1,5 @@
-public class Section {
-    public Section(int startHeight, int endHeight, int startWidth, int endWidth) {
+class Section {
+    Section(int startHeight, int endHeight, int startWidth, int endWidth) {
         this.startHeight = startHeight;
         this.endHeight = endHeight;
         this.startWidth = startWidth;
