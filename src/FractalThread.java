@@ -11,8 +11,10 @@ public class FractalThread implements Runnable {
     public void run() {
         while(!sections.isEmpty()){
             Section currentSection = sections.pop();
-            System.out.println(name + " is calculating " + currentSection.startHeight + ":" + currentSection.endHeight +
-            " " + currentSection.startWidth + ":" + currentSection.endWidth);
+            if(!fractal.isQuiet()){
+                System.out.println(name + " is calculating " + currentSection.startHeight + ":" +
+                        currentSection.endHeight + " " + currentSection.startWidth + ":" + currentSection.endWidth);
+            }
             fractal.calculateSection(currentSection);
         }
     }

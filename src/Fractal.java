@@ -6,52 +6,115 @@ import javax.imageio.ImageIO;
 import org.apache.commons.math3.complex.Complex;
 
 public class Fractal {
-    public Fractal(int width, int height, int xLimitLow, int xLimitHigh, int yLimitLow, int yLimitHigh,
-                   int calculationLimit, int maxIterations, String imageName) {
+    // Constructors and initialization //
+    private Fractal(int width, int height, int xLimitLow, int xLimitHigh, int yLimitLow, int yLimitHigh,
+                   int calculationLimit, int maxIterations, String imageName, boolean isQuiet) {
         this.width = width;
         this.height = height;
         this.xLimitLow = xLimitLow;
+        this.xLimitHigh = xLimitHigh;
         this.yLimitLow = yLimitLow;
+        this.yLimitHigh = yLimitHigh;
         this.calculationLimit = calculationLimit;
         this.maxIterations = maxIterations;
         this.imageName = imageName;
+        this.isQuiet = isQuiet;
 
-        this.resolutionProportion = (double)height / width;
-        this.verticalStepBetweenPixels = ((double)xLimitHigh - xLimitLow) / width;
-        this.horizontalStepBetweenPixels = ((double)yLimitHigh - yLimitLow) / height;
-        this.colorPalette = new int[maxIterations];
+        calculateRestOfMembers();
+    }
+
+    private Fractal(){
+        width = 640;
+        height = 480;
+        xLimitLow = -2;
+        xLimitHigh = 2;
+        yLimitLow = -2;
+        yLimitHigh = 2;
+        calculationLimit = 16;
+        maxIterations = 50;
+        imageName = "zad18.png";
+        isQuiet = false;
+    }
+
+    private Fractal(String[] args){
+        this();
+        setMembersByInputArguments(args);
+
+        calculateRestOfMembers();
+    }
+
+    private void setMembersByInputArguments(String[] args){
+        for (int i = 0; i < args.length; i++){
+            switch (args[i]) {
+                case "-q":
+                    isQuiet = true;
+                    break;
+                case "-s":
+                    String[] sizes = args[i + 1].split("x");
+                    width = Integer.parseInt(sizes[0]);
+                    height = Integer.parseInt(sizes[1]);
+                    i++;
+                    break;
+                case "-r":
+                    String[] limits = args[i + 1].split(":");
+                    xLimitLow = Double.parseDouble(limits[0]);
+                    xLimitHigh = Double.parseDouble(limits[1]);
+                    yLimitLow = Double.parseDouble(limits[2]);
+                    yLimitHigh = Double.parseDouble(limits[3]);
+                    i++;
+                    break;
+                case "-t":
+                    dedicatedThreadsCount = Integer.parseInt(args[i + 1]);
+                    i++;
+                    break;
+                case "-o":
+                    imageName = args[i + 1];
+                    i++;
+                    break;
+                default:
+                    System.out.println("Unknown parameter");
+            }
+        }
+
+    }
+
+    private void calculateRestOfMembers(){
+        resolutionProportion = (double)height / width;
+        verticalStepBetweenPixels = ((double)xLimitHigh - xLimitLow) / width;
+        horizontalStepBetweenPixels = ((double)yLimitHigh - yLimitLow) / height;
+        colorPalette = new int[maxIterations];
         for (int i = 0; i<maxIterations; i++) {
             colorPalette[i] = Color.HSBtoRGB(i/256f, 1, i/(i+8f));
         }
-        this.image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+        image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
     }
-// size, rect, threads, fileName, quiet
+
+    // Actual methods//
     public static void main(String[] args) throws Exception{
-        int threadCount;
-        if(args[0] != null){
-            threadCount = Integer.parseInt(args[0]);
-        } else{
-            threadCount = 1;
-        }
-        Fractal a = new Fractal(1920 * 4, 1080 * 4, -2, 2, -2, 2, 16, 50, "mandelbrot2.png");
+        //Fractal a = new Fractal(1920 * 4, 1080 * 4, -2, 2, -2, 2, 16, 50, "mandelbrot2.png", false);
+        Fractal a = new Fractal(args);
         LinkedList<Section> sections = a.splitCalculationsBySections();
         Scheduler scheduler = new Scheduler(sections);
 
-        Thread[] threads = new Thread[threadCount];
+        Thread[] threads = new Thread[a.dedicatedThreadsCount];
 
         long startTime = System.nanoTime();
-        for(int i = 0; i < threadCount; i++){
+        for(int i = 0; i < a.dedicatedThreadsCount; i++){
             threads[i] = new Thread(new FractalThread(a, scheduler, "Thread " + i));
             threads[i].start();
         }
 
-        for(int i = 0; i < threadCount; i++){
+        for(int i = 0; i < a.dedicatedThreadsCount; i++){
             threads[i].join();
         }
 
         System.out.println("Elapsed time: " + ((System.nanoTime() - startTime)/1000000000.0));
 
         a.exportImage();
+    }
+
+    boolean isQuiet(){
+        return isQuiet;
     }
 
     private LinkedList<Section> splitCalculationsBySections(){
@@ -116,11 +179,15 @@ public class Fractal {
     // Member variables //
     private int width;
     private int height;
-    private int xLimitLow;
-    private int yLimitLow;
+    private double xLimitLow;
+    private double xLimitHigh;
+    private double yLimitLow;
+    private double yLimitHigh;
     private int calculationLimit;
     private int maxIterations;
     private String imageName;
+    private int dedicatedThreadsCount;
+    private boolean isQuiet;
 
     private double resolutionProportion;
     private double verticalStepBetweenPixels;
