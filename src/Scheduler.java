@@ -1,15 +1,15 @@
 import java.util.LinkedList;
 
-public class Scheduler {
+class Scheduler {
     Scheduler(LinkedList<Section> sections){
         this.sections = sections;
     }
 
-    public synchronized Section pop(){
+    synchronized Section pop(){
         return sections.pop();
     }
 
-    public boolean isEmpty(){
+    boolean isEmpty(){
         return sections.isEmpty();
     }
 
