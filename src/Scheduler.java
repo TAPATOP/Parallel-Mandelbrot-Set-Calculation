@@ -6,6 +6,7 @@ class Scheduler {
     }
 
     synchronized Section pop(){
+        if(isEmpty()) return null;
         return sections.pop();
     }
 

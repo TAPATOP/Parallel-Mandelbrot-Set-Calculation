@@ -24,7 +24,6 @@ public class Fractal {
     private Fractal(String[] args){
         this();
         setMembersByInputArguments(args);
-
         calculateRestOfMembers();
     }
 
@@ -65,8 +64,8 @@ public class Fractal {
 
     private void calculateRestOfMembers(){
         resolutionProportion = (double)height / width;
-        verticalStepBetweenPixels = ((double)xLimitHigh - xLimitLow) / width;
-        horizontalStepBetweenPixels = ((double)yLimitHigh - yLimitLow) / height;
+        verticalStepBetweenPixels = (xLimitHigh - xLimitLow) / width;
+        horizontalStepBetweenPixels = (yLimitHigh - yLimitLow) / height;
         colorPalette = new int[maxIterations];
         for (int i = 0; i<maxIterations; i++) {
             colorPalette[i] = Color.HSBtoRGB(i/256f, 1, i/(i+8f));
